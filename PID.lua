@@ -35,20 +35,29 @@ function PID.circular(kp, ki, kd, min, max)
         kp = kp, ki = ki, kd = kd,
         update = function(self, err, deltaT)
             local interval = max - min
-			local pure_err = err
             while err < min do
                 err = err + interval
             end
             while err > max do
-				err = err - interval
-			end
+                err = err - interval
+            end
+			print("angular error pre cor = " , 180 * err / math.pi)
+            if err > (interval / 2) then
+                err = err - interval
+            end
+            if err < -(interval / 2) then
+                err = err + interval
+            end
+            print('post = ', 180 * err / math.pi)
+            print('derivative = ', 180 * (deltaT * (self.prev_err - err)) / math.pi)
+			print()
 
 			local p = -err
 			local i = -self.err_sum
-			local d = deltaT * (self.prev_err - pure_err)
+			local d = deltaT * (self.prev_err - err)
 
 			self.err_sum = self.err_sum + err
-			self.prev_err = pure_err
+			self.prev_err = err
 			return p * self.kp + i * self.ki + d * self.kd
 		end
 	}
@@ -68,8 +77,9 @@ end
 function MatricialControlSystem(inputs, outputs, PIDs)
     local mat = Matrix(outputs, inputs)
     local input_pids = {}
-    for i = 1, PIDs do
-        input_pids = PIDs[i]
+    for i = 1, #PIDs do
+		print("pid"..i)
+        input_pids[i] = PIDs[i]
 	end
 
 	---@type MatricialControlSystem
@@ -79,12 +89,13 @@ function MatricialControlSystem(inputs, outputs, PIDs)
         input_PIDs = input_pids,
         relationship_matrix = mat,
         compute = function(self, errors, deltaT)
-            local error_output = Matrix(errors.r, errors.c)
-			for i = 1, self.inputs do
-				error_output.data[i][1] = self.input_PIDs[i]:update(errors[i][1], deltaT)
-			end
+            local error_corrected = Matrix(self.inputs, 1)
+			
+            for i = 1, self.inputs do
+                error_corrected.data[i][1] = self.input_PIDs[i]:update(errors.data[i][1], deltaT)
+            end
 			---@diagnostic disable-next-line: return-type-mismatch
-			return self.relationship_matrix:times(error_output)
+			return self.relationship_matrix:times(error_corrected)
 		end
 	}
 end

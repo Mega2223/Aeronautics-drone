@@ -21,6 +21,8 @@ local function times(mat1, scalar)
                 end
             end
         end
+        -- print(mat1:toString() .. "\n*\n" .. mat2:toString() .. "\n=\n" .. ret:toString())
+        -- sleep(10)
         return ret
     elseif scalar.type == "vec3" then
         local vec3 = scalar
