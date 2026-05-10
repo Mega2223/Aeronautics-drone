@@ -1,3 +1,5 @@
+---@diagnostic disable: param-type-mismatch, return-type-mismatch
+
 ---@class Motor
 ---@field set fun(ac: number)
 
@@ -12,3 +14,28 @@ function CreativeMotor(loc)
     }
 end
 
+-- "altitude_sensor"
+---@class AltitudeSensor
+---@field getHeight fun(): number
+---@return AltitudeSensor
+function AltitudeSensor()
+	return peripheral.find("altitude_sensor")
+end
+
+-- "navigation_table"
+---@class NavigationTable
+---@field getRelativeAngle fun(): number
+---@field getRelativeAngleRad fun(): number
+---@return NavigationTable
+function NavigationTable()
+    return peripheral.find("navigation_table")
+end
+
+-- "gimbal_sensor"
+---@class GimbalSensor
+---@field getAngles fun(): table<integer,number>
+---@field getAnglesRad fun(): table<integer,number>
+---@return GimbalSensor
+function GimbalSensor()
+	return peripheral.find("gimbal_sensor")
+end
