@@ -55,17 +55,17 @@ if not alt then error'not alt' end
 
 
 PIDs = {
-    PID.new(5, 1, 2),
-    PID.new(.1, .001, .1),
-    PID.new(.1 ,.001 ,.1),
-    PID.circular(.25,0,16, -math.pi, math.pi)
+    PID.new(5, 1, 6),
+    PID.new(.5, .001, 8),
+    PID.new(.5, .001, 8),
+    PID.circular(.25,0,1, -math.pi, math.pi)
 }
 
 Desired = {
-    200,
-    0,
-    0,
-    0
+    200, -- height
+    0, -- rx
+    0, -- rz
+    0  -- ry
 }
 
 local sys = MatricialControlSystem(#PIDs, #ENGINES, PIDs)
@@ -84,7 +84,6 @@ sys.relationship_matrix.data[1][3] = -35
 sys.relationship_matrix.data[2][3] = 35
 sys.relationship_matrix.data[3][3] = 35
 sys.relationship_matrix.data[4][3] = -35
-
 
 sys.relationship_matrix.data[6][4] = -80
 sys.relationship_matrix.data[5][4] = -80

@@ -53,8 +53,8 @@ function PID.circular(kp, ki, kd, min, max)
 			print()
 
 			local p = -err
-			local i = -self.err_sum
-			local d = deltaT * (self.prev_err - err)
+			local i = -self.err_sum * deltaT
+			local d = (self.prev_err - err) / deltaT
 
 			self.err_sum = self.err_sum + err
 			self.prev_err = err
