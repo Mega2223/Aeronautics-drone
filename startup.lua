@@ -49,64 +49,21 @@ local gim = GimbalSensor()
 local nav = NavigationTable()
 
 if not alt then error'not alt' end
--- sleep(2)
-
---- height, gimbal[1], gimbal[2]
-
-
-PIDs = {
-    PID.new(5, 1, 6),
-    PID.new(.5, .001, 8),
-    PID.new(.5, .001, 8),
-    PID.circular(.25,0,1, -math.pi, math.pi)
-}
-
-Desired = {
-    200, -- height
-    0, -- rx
-    0, -- rz
-    0  -- ry
-}
-
-local sys = MatricialControlSystem(#PIDs, #ENGINES, PIDs)
-
-sys.relationship_matrix.data[1][1] = .01
-sys.relationship_matrix.data[2][1] = .01
-sys.relationship_matrix.data[3][1] = .01
-sys.relationship_matrix.data[4][1] = .01
-
-sys.relationship_matrix.data[1][2] = 35
-sys.relationship_matrix.data[2][2] = -35
-sys.relationship_matrix.data[3][2] = 35
-sys.relationship_matrix.data[4][2] = -35
-
-sys.relationship_matrix.data[1][3] = -35
-sys.relationship_matrix.data[2][3] = 35
-sys.relationship_matrix.data[3][3] = 35
-sys.relationship_matrix.data[4][3] = -35
-
-sys.relationship_matrix.data[6][4] = -80
-sys.relationship_matrix.data[5][4] = -80
 
 local dt = .1
 
+require('autopilot')
+
+local autopilot = Autopilot.new(ENGINES)
+
+local x,y,z = gps.locate(2,true)
+autopilot:update(x,y,z,0,0,0,1)
+
 while true do
-    local erros = Matrix(4, 1)
-    erros.data[1][1] = Desired[1] - alt.getHeight()
-    erros.data[2][1] = Desired[2] - gim.getAnglesRad()[1]
-    erros.data[3][1] = Desired[3] - gim.getAnglesRad()[2]
-    erros.data[4][1] = Desired[4] - nav.getRelativeAngleRad()
-
-    local outs = sys:compute(erros, dt)
-
-    print("errors\n" .. erros:toString())
-    -- print("weights\n" .. sys.relationship_matrix:toString())
-    print("outs\n" .. outs:toString())
-
-    for i = 1, outs.r do
-        ENGINES[i].set(outs.data[i][1])
-        --print("E" .. i .. ": " .. outs.data[i][1])
-    end
+    local x,y,z = gps.locate(2,true)
+    y = alt.getHeight()
+    local g = gim.getAnglesRad()
+    autopilot:update(x,y,z,g[1],nav.getRelativeAngleRad(),g[2],dt)
 
     sleep(dt)
     term.clear()
