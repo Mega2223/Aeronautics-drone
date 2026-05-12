@@ -3,8 +3,8 @@ require('vector')
 
 function AngleDifference(angle_a, angle_b)
     local interval = 2 * math.pi
-	local err = angle_b - angle_a
-	while err < - math.pi do
+    local err = angle_b - angle_a
+    while err < -math.pi do
         err = err + interval
     end
     while err > math.pi do
@@ -16,7 +16,11 @@ function AngleDifference(angle_a, angle_b)
     if err < -(interval / 2) then
         err = err + interval
     end
-	return err
+    return err
+end
+
+function Clamp(num, min_n, max_n)
+	return math.max(min_n,math.min(max_n,num))
 end
 
 ---@enum AutopilotState
@@ -69,6 +73,9 @@ end
 
 Autopilot = {}
 
+---@type PID
+local cruise_pid = PID.new(-.003,0,-.003)
+
 ---@param self Autopilot
 ---@param x number
 ---@param y number
@@ -106,13 +113,55 @@ local function update(self, x, y, z, rx, rz, heading, dt)
 			self.local_goal.y, 0, 0, angle
         }
         local dif = AngleDifference(angle, self.rotation.y) * 180 / math.pi
-		dif = math.abs(dif)
-        if dif <= 10 then
-            print("Angle stable to go forward",dif)
-            goals[3] = .1
+        dif = math.abs(dif)
+		local dist = math.min(
+			math.sqrt((self.position.x - self.local_goal.x)^2 + (self.position.z - self.local_goal.z)),
+			100
+		)
+        if dif <= 6 then
+            goals[3] = math.min(.1, cruise_pid:update(dist, dt))
+            print("Angle ", dif, " good enough to go forward with ", goals[3])
+            print("distance = ", dist)
+        end
+        if dist < 3 then
+            print("landing phase")
+			self.state = AutopilotState.LANDING
+			self.local_goal = self.destination
 		end
 
-		computeGoals(self, goals, y, rx, rz, heading, dt)
+        computeGoals(self, goals, y, rx, rz, heading, dt)
+    elseif self.state == AutopilotState.LANDING then
+        print("Landing...")
+        local dif = AngleDifference(0, self.rotation.y) * 180 / math.pi
+		local dist = math.sqrt((self.position.x - self.local_goal.x)^2 + (self.position.z - self.local_goal.z))
+        dif = math.abs(dif)
+        if dif >= 3 then
+            print('Aligning north...')
+            local goals = { self.position.y - 5, 0, 0, 0 }
+            computeGoals(self, goals, y, rx, rz, heading, dt)
+        elseif dist <= 5 then
+            print('Descending...')
+			local xerr, zerr = self.local_goal.x - self.position.x, self.local_goal.z - self.position.z
+			local xang, zang = - Clamp(zerr * 0.005,-.025,.025), Clamp(xerr * 0.005,-.025,.025)
+			local goals = {
+				self.position.y - 30, zang, xang, 0
+			}
+            computeGoals(self, goals, y, rx, rz, heading, dt)
+            if math.abs(self.position.y - self.local_goal.y) <= 5.5 then
+                for i = 1, #self.ENGINES do
+                    self.ENGINES[i].set(0)
+                end
+				self.state =AutopilotState.STOP
+			end
+        else
+            local xerr, zerr = self.local_goal.x - self.position.x, self.local_goal.z - self.position.z
+			local xang, zang = - Clamp(zerr * 0.005,-.025,.025), Clamp(xerr * 0.005,-.025,.025)
+			print('Getting Closer...',xang,zang)
+			local goals = {
+				self.position.y - 10, zang, xang, 0
+			}
+			computeGoals(self, goals, y, rx, rz, heading, dt)
+		end
 	end
 end
 
@@ -149,7 +198,7 @@ function Autopilot.new(ENGINES)
 		PID.new(5, 1, 6),
 		PID.new(.5, .001, 16),
 		PID.new(.5, .001, 16),
-		PID.circular(.5,0,.65, -math.pi, math.pi)
+		PID.circular(1,0,1, -math.pi, math.pi)
 	}
 
     local control_schema = genControlSchema(PIDs, ENGINES)

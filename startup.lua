@@ -58,8 +58,15 @@ local autopilot = Autopilot.new(ENGINES)
 
 local x,y,z = gps.locate(2,true)
 autopilot:update(x,y,z,0,0,0,1)
-autopilot:setDestination(Vec3(0, 0, 0))
+-- autopilot:setDestination(Vec3(-292, 104, 230))
+autopilot:setDestination(Vec3(265, 65, -80))
+-- autopilot:setDestination(Vec3(-1741, 7, 536))
+
 autopilot:startFlight()
+
+os.sleep(4)
+-- autopilot.local_goal = autopilot.destination:clone()
+-- autopilot.state = AutopilotState.LANDING
 
 while true do
     local x,y,z = gps.locate(2,false)
