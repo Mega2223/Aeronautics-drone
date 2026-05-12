@@ -58,14 +58,16 @@ local autopilot = Autopilot.new(ENGINES)
 
 local x,y,z = gps.locate(2,true)
 autopilot:update(x,y,z,0,0,0,1)
+autopilot:setDestination(Vec3(0, 0, 0))
+autopilot:startFlight()
 
 while true do
-    local x,y,z = gps.locate(2,true)
+    local x,y,z = gps.locate(2,false)
     y = alt.getHeight()
     local g = gim.getAnglesRad()
-    autopilot:update(x,y,z,g[1],nav.getRelativeAngleRad(),g[2],dt)
+    autopilot:update(x,y,z,g[1],g[2],nav.getRelativeAngleRad(),dt)
 
     sleep(dt)
     term.clear()
-    term.setCursorPos(1,1)
+    term.setCursorPos(1, 1)
 end

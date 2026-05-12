@@ -41,16 +41,16 @@ function PID.circular(kp, ki, kd, min, max)
             while err > max do
                 err = err - interval
             end
-			print("angular error pre cor = " , 180 * err / math.pi)
+			-- print("angular error pre cor = " , 180 * err / math.pi)
             if err > (interval / 2) then
                 err = err - interval
             end
             if err < -(interval / 2) then
                 err = err + interval
             end
-            print('post = ', 180 * err / math.pi)
-            print('derivative = ', 180 * (deltaT * (self.prev_err - err)) / math.pi)
-			print()
+            -- print('post = ', 180 * err / math.pi)
+            -- print('derivative = ', 180 * (deltaT * (self.prev_err - err)) / math.pi)
+			-- print()
 
 			local p = -err
 			local i = -self.err_sum * deltaT
